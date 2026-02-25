@@ -1,0 +1,5 @@
+{
+  "name": "Midwife Birth Counter",
+  "description": "A digital tracker for student midwives to count their 40 deliveries.",
+  "requestFramePermissions": []
+}
