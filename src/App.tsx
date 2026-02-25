@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 
-type SlotState = 'empty' | 'pink' | 'blue';
+type SlotColor = 'empty' | 'pink' | 'blue';
+interface SlotData {
+  color: SlotColor;
+  date: string;
+}
 
 const Footprint = ({
-  state,
+  color,
   className,
 }: {
-  state: SlotState;
+  color: SlotColor;
   className?: string;
 }) => {
-  const isEmpty = state === 'empty';
-  const color =
-    state === 'pink' ? '#ff9eb5' : state === 'blue' ? '#7cd0ff' : 'transparent';
+  const isEmpty = color === 'empty';
+  const fill =
+    color === 'pink' ? '#ff9eb5' : color === 'blue' ? '#7cd0ff' : 'transparent';
 
   return (
     <svg
@@ -20,7 +24,7 @@ const Footprint = ({
       style={{
         filter: isEmpty ? 'none' : 'drop-shadow(2px 4px 3px rgba(0,0,0,0.4))',
         transform:
-          state !== 'empty'
+          color !== 'empty'
             ? 'scale(1.05) rotate(-5deg)'
             : 'scale(0.95) rotate(-5deg)',
       }}
@@ -51,7 +55,7 @@ const Footprint = ({
         </g>
       )}
       {!isEmpty && (
-        <g fill={color} stroke='rgba(0,0,0,0.05)' strokeWidth='1'>
+        <g fill={fill} stroke='rgba(0,0,0,0.05)' strokeWidth='1'>
           <ellipse
             cx='32'
             cy='22'
@@ -93,11 +97,15 @@ const Footprint = ({
 };
 
 export default function App() {
-  const [name, setName] = useState('Enter your name here');
-  const [subtitle, setSubtitle] = useState('Midwife in the making');
-  const [dateRange, setDateRange] = useState('Start Year - End Year');
-  const [slots, setSlots] = useState<SlotState[]>(Array(40).fill('empty'));
+  const [name, setName] = useState('Enter Your Name Here');
+  const [startYear, setStartYear] = useState('20225');
+  const [endYear, setEndYear] = useState('2028');
+  const [slots, setSlots] = useState<SlotData[]>(
+    Array.from({ length: 40 }, () => ({ color: 'empty', date: '' })),
+  );
   const [isLoaded, setIsLoaded] = useState(false);
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   useEffect(() => {
     const savedData = localStorage.getItem('midwife-tracker');
@@ -105,9 +113,16 @@ export default function App() {
       try {
         const parsed = JSON.parse(savedData);
         if (parsed.name) setName(parsed.name);
-        if (parsed.subtitle) setSubtitle(parsed.subtitle);
-        if (parsed.dateRange) setDateRange(parsed.dateRange);
-        if (parsed.slots && parsed.slots.length === 40) setSlots(parsed.slots);
+        if (parsed.startYear) setStartYear(parsed.startYear);
+        if (parsed.endYear) setEndYear(parsed.endYear);
+
+        // Handle migration from old string array to object array
+        if (parsed.slots && parsed.slots.length === 40) {
+          const migratedSlots = parsed.slots.map((s: any) =>
+            typeof s === 'string' ? { color: s, date: '' } : s,
+          );
+          setSlots(migratedSlots);
+        }
       } catch (e) {
         console.error('Failed to parse saved data', e);
       }
@@ -121,28 +136,19 @@ export default function App() {
         'midwife-tracker',
         JSON.stringify({
           name,
-          subtitle,
-          dateRange,
+          startYear,
+          endYear,
           slots,
         }),
       );
     }
-  }, [name, subtitle, dateRange, slots, isLoaded]);
+  }, [name, startYear, endYear, slots, isLoaded]);
 
-  const handleSlotClick = (index: number) => {
-    setSlots((prev) => {
-      const newSlots = [...prev];
-      const current = newSlots[index];
-      if (current === 'empty') newSlots[index] = 'pink';
-      else if (current === 'pink') newSlots[index] = 'blue';
-      else newSlots[index] = 'empty';
-      return newSlots;
-    });
-  };
-
-  const pinkCount = slots.filter((s) => s === 'pink').length;
-  const blueCount = slots.filter((s) => s === 'blue').length;
+  const pinkCount = slots.filter((s) => s.color === 'pink').length;
+  const blueCount = slots.filter((s) => s.color === 'blue').length;
   const totalCount = pinkCount + blueCount;
+
+  const years = Array.from({ length: 15 }, (_, i) => (2020 + i).toString());
 
   return (
     <div className='min-h-screen flex flex-col items-center py-8 sm:py-12 px-4 font-sans'>
@@ -161,30 +167,60 @@ export default function App() {
               onChange={(e) => setName(e.target.value)}
               className='bg-transparent text-center text-4xl sm:text-5xl md:text-6xl font-script text-stone-800 outline-none w-full placeholder-stone-500 engraved-text'
             />
-            <input
-              type='text'
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              className='bg-transparent text-center text-xl sm:text-2xl md:text-3xl font-serif text-stone-800 outline-none w-full placeholder-stone-500 engraved-text font-semibold tracking-wide'
-            />
-            <input
-              type='text'
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className='bg-transparent text-center text-lg sm:text-xl md:text-2xl font-serif text-stone-800 outline-none w-full placeholder-stone-500 engraved-text font-semibold tracking-widest'
-            />
+            <div className='text-center text-xl sm:text-2xl md:text-3xl font-serif text-stone-800 engraved-text font-semibold tracking-wide'>
+              Midwife in the making
+            </div>
+            <div className='flex items-center justify-center gap-2 text-lg sm:text-xl md:text-2xl font-serif text-stone-800 engraved-text font-semibold tracking-widest mt-1'>
+              <select
+                value={startYear}
+                onChange={(e) => setStartYear(e.target.value)}
+                className='bg-transparent outline-none cursor-pointer text-center appearance-none hover:bg-black/5 rounded px-3 py-1 transition-colors min-w-[4.5em]'
+              >
+                {years.map((y) => (
+                  <option key={`start-${y}`} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+              <span>-</span>
+              <select
+                value={endYear}
+                onChange={(e) => setEndYear(e.target.value)}
+                className='bg-transparent outline-none cursor-pointer text-center appearance-none hover:bg-black/5 rounded px-3 py-1 transition-colors min-w-[4.5em]'
+              >
+                {years.map((y) => (
+                  <option key={`end-${y}`} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Grid */}
-          <div className='grid grid-cols-8 gap-x-2 gap-y-4 sm:gap-x-4 sm:gap-y-6 relative z-10 px-2 sm:px-4'>
+          <div className='grid grid-cols-8 gap-x-2 gap-y-6 sm:gap-x-4 sm:gap-y-8 relative z-10 px-2 sm:px-4'>
             {slots.map((slot, i) => (
               <button
                 key={i}
-                onClick={() => handleSlotClick(i)}
-                className='aspect-square w-full flex items-center justify-center focus:outline-none hover:scale-110 transition-transform cursor-pointer'
-                aria-label={`Slot ${i + 1}, currently ${slot}`}
+                onClick={() => setActiveSlotIndex(i)}
+                className='flex flex-col items-center justify-start focus:outline-none hover:scale-110 transition-transform cursor-pointer relative group'
+                aria-label={`Slot ${i + 1}, currently ${slot.color}`}
+                title={slot.date ? `Delivered: ${slot.date}` : `Slot ${i + 1}`}
               >
-                <Footprint state={slot} />
+                <div className='aspect-square w-full'>
+                  <Footprint color={slot.color} />
+                </div>
+                <div className='h-4 mt-1 flex items-center justify-center w-full'>
+                  {slot.date && (
+                    <span className='text-[9px] sm:text-[10px] font-mono text-stone-700/80 whitespace-nowrap'>
+                      {new Date(slot.date).toLocaleDateString(undefined, {
+                        year: '2-digit',
+                        month: 'numeric',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
           </div>
@@ -201,8 +237,8 @@ export default function App() {
               Delivery Progress
             </h2>
             <p className='text-stone-500 text-sm'>
-              Click the footprints on the board to track your deliveries. Cycle
-              through pink, blue, and empty.
+              Click the footprints on the board to record a delivery date and
+              choose a color.
             </p>
           </div>
 
@@ -238,17 +274,147 @@ export default function App() {
           </div>
 
           <button
-            onClick={() => {
-              if (confirm('Are you sure you want to reset all counters?')) {
-                setSlots(Array(40).fill('empty'));
-              }
-            }}
+            onClick={() => setIsResetModalOpen(true)}
             className='mt-4 w-full py-4 rounded-xl text-stone-500 hover:bg-stone-100 hover:text-stone-800 transition-colors font-semibold text-sm border border-stone-200'
           >
             Reset Board
           </button>
         </div>
       </div>
+
+      {/* Modal */}
+      {activeSlotIndex !== null && (
+        <div
+          className='fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4'
+          onClick={() => setActiveSlotIndex(null)}
+        >
+          <div
+            className='bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className='text-xl font-bold text-stone-800 mb-4'>
+              Record Delivery {activeSlotIndex + 1}
+            </h3>
+
+            <div className='space-y-5'>
+              <div>
+                <label className='block text-sm font-medium text-stone-700 mb-1'>
+                  Delivery Date
+                </label>
+                <input
+                  type='date'
+                  value={slots[activeSlotIndex].date}
+                  onChange={(e) => {
+                    const newSlots = [...slots];
+                    newSlots[activeSlotIndex] = {
+                      ...newSlots[activeSlotIndex],
+                      date: e.target.value,
+                    };
+                    setSlots(newSlots);
+                  }}
+                  className='w-full border border-stone-300 rounded-lg p-2.5 outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-stone-700 mb-2'>
+                  Footprint Color
+                </label>
+                <div className='flex gap-3'>
+                  <button
+                    onClick={() => {
+                      const newSlots = [...slots];
+                      newSlots[activeSlotIndex] = {
+                        ...newSlots[activeSlotIndex],
+                        color: 'pink',
+                      };
+                      setSlots(newSlots);
+                    }}
+                    className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${slots[activeSlotIndex].color === 'pink' ? 'bg-pink-50 border-pink-400 text-pink-700' : 'border-stone-100 hover:border-pink-200 text-stone-600'}`}
+                  >
+                    Girl (Pink)
+                  </button>
+                  <button
+                    onClick={() => {
+                      const newSlots = [...slots];
+                      newSlots[activeSlotIndex] = {
+                        ...newSlots[activeSlotIndex],
+                        color: 'blue',
+                      };
+                      setSlots(newSlots);
+                    }}
+                    className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${slots[activeSlotIndex].color === 'blue' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-stone-100 hover:border-blue-200 text-stone-600'}`}
+                  >
+                    Boy (Blue)
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    const newSlots = [...slots];
+                    newSlots[activeSlotIndex] = { color: 'empty', date: '' };
+                    setSlots(newSlots);
+                  }}
+                  className={`w-full mt-3 py-2.5 rounded-xl border-2 font-medium transition-all ${slots[activeSlotIndex].color === 'empty' ? 'bg-stone-100 border-stone-300 text-stone-700' : 'border-stone-100 hover:bg-stone-50 text-stone-500'}`}
+                >
+                  Clear Slot
+                </button>
+              </div>
+            </div>
+
+            <div className='mt-8 flex justify-end'>
+              <button
+                onClick={() => setActiveSlotIndex(null)}
+                className='px-6 py-2.5 bg-stone-800 text-white rounded-xl hover:bg-stone-700 transition-colors font-medium w-full'
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Reset Confirmation Modal */}
+      {isResetModalOpen && (
+        <div
+          className='fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4'
+          onClick={() => setIsResetModalOpen(false)}
+        >
+          <div
+            className='bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className='text-xl font-bold text-stone-800 mb-2'>
+              Reset Board
+            </h3>
+            <p className='text-stone-600 mb-6'>
+              Are you sure you want to reset all counters? This action cannot be
+              undone.
+            </p>
+
+            <div className='flex gap-3 justify-end'>
+              <button
+                onClick={() => setIsResetModalOpen(false)}
+                className='px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-xl transition-colors font-medium'
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setSlots(
+                    Array.from({ length: 40 }, () => ({
+                      color: 'empty',
+                      date: '',
+                    })),
+                  );
+                  setIsResetModalOpen(false);
+                }}
+                className='px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium'
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
