@@ -41,5 +41,5 @@ body {
 }
 
 .animate-pulsate {
-  animation: pulsate 1s ease-in-out 6;
+  animation: pulsate 1.5s ease-in-out 6;
 }
