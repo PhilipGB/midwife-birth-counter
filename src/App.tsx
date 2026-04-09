@@ -5,6 +5,7 @@ type SlotColor = 'empty' | 'pink' | 'blue';
 interface SlotData {
   color: SlotColor;
   date: string;
+  id?: number;
 }
 
 const Footprint = ({
@@ -109,6 +110,10 @@ export default function App() {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
   const [pendingCelebration, setPendingCelebration] = useState(false);
+  const [lastModifiedIndex, setLastModifiedIndex] = useState<number | null>(
+    null,
+  );
+  const [modificationTick, setModificationTick] = useState(0);
   const [pendingImportData, setPendingImportData] = useState<{
     name: string;
     startYear: string;
@@ -156,6 +161,53 @@ export default function App() {
   const pinkCount = slots.filter((s) => s.color === 'pink').length;
   const blueCount = slots.filter((s) => s.color === 'blue').length;
   const totalCount = pinkCount + blueCount;
+
+  const getPredictedCompletionDate = () => {
+    if (totalCount >= 40) return 'Goal reached!';
+
+    const datedSlots = slots
+      .filter((s) => s.date)
+      .map((s) => new Date(s.date))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (datedSlots.length < 2) return null;
+
+    const firstBirth = datedSlots[0];
+    const lastBirth = datedSlots[datedSlots.length - 1];
+    const timeDiff = lastBirth.getTime() - firstBirth.getTime();
+    const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+    const avgDaysPerBirth = daysDiff / (datedSlots.length - 1);
+
+    const remainingBirths = 40 - totalCount;
+    const estimatedDaysRemaining = remainingBirths * avgDaysPerBirth;
+    const predictedDate = new Date(
+      lastBirth.getTime() + estimatedDaysRemaining * 1000 * 60 * 60 * 24,
+    );
+
+    return predictedDate.toLocaleDateString(undefined, {
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const predictedDate = getPredictedCompletionDate();
+
+  const sortedSlots = [...slots]
+    .map((slot, index) => ({ slot, index }))
+    .sort((a, b) => {
+      const sA = a.slot;
+      const sB = b.slot;
+      if (sA.date && sB.date) {
+        const dateComp = sA.date.localeCompare(sB.date);
+        if (dateComp !== 0) return dateComp;
+        return (sA.id || 0) - (sB.id || 0);
+      }
+      if (sA.date) return -1;
+      if (sB.date) return 1;
+      if (sA.color !== 'empty' && sB.color === 'empty') return -1;
+      if (sA.color === 'empty' && sB.color !== 'empty') return 1;
+      return 0;
+    });
 
   useEffect(() => {
     if (activeSlotIndex === null && pendingCelebration) {
@@ -298,20 +350,27 @@ export default function App() {
 
           {/* Grid */}
           <div className='grid grid-cols-5 sm:grid-cols-8 gap-x-2 gap-y-6 sm:gap-x-4 sm:gap-y-8 relative z-10 px-2 sm:px-4'>
-            {slots.map((slot, i) => (
+            {sortedSlots.map(({ slot, index }, i) => (
               <button
-                key={i}
-                onClick={() => setActiveSlotIndex(i)}
+                key={index}
+                onClick={() => setActiveSlotIndex(index)}
                 className='flex flex-col items-center justify-start focus:outline-none hover:scale-110 transition-transform cursor-pointer relative group'
-                aria-label={`Slot ${i + 1}, currently ${slot.color}`}
-                title={slot.date ? `Delivered: ${slot.date}` : `Slot ${i + 1}`}
+                aria-label={`Slot ${index + 1}, currently ${slot.color}`}
+                title={
+                  slot.date ? `Delivered: ${slot.date}` : `Slot ${index + 1}`
+                }
               >
-                <div className='aspect-square w-full'>
+                <div
+                  key={`${index}-${modificationTick}`}
+                  className={`aspect-square w-full ${index === lastModifiedIndex ? 'animate-pulsate' : ''}`}
+                >
                   <Footprint color={slot.color} />
                 </div>
                 <div className='h-4 mt-1 flex items-center justify-center w-full'>
                   {slot.date && (
-                    <span className='text-[9px] sm:text-[10px] font-mono text-stone-700/80 whitespace-nowrap'>
+                    <span
+                      className={`text-[9px] sm:text-[10px] font-mono text-stone-700/80 whitespace-nowrap ${index === lastModifiedIndex ? 'font-bold' : ''}`}
+                    >
                       {new Date(slot.date).toLocaleDateString(undefined, {
                         year: '2-digit',
                         month: 'numeric',
@@ -359,6 +418,16 @@ export default function App() {
                 <span className='text-stone-400 text-xl font-normal'>/ 40</span>
               </span>
             </div>
+            {predictedDate && (
+              <div className='flex justify-between items-center py-4 border-b border-stone-100 gap-2'>
+                <span className='text-stone-500 font-medium'>
+                  Predicted Completion
+                </span>
+                <span className='text-sm font-semibold text-stone-800 text-right'>
+                  {predictedDate}
+                </span>
+              </div>
+            )}
 
             <div className='flex gap-4 pt-2'>
               <div className='flex-1 bg-pink-50/50 rounded-2xl p-4 flex flex-col items-center border border-pink-100'>
@@ -430,11 +499,20 @@ export default function App() {
                     onClick={() => {
                       const today = new Date().toISOString().split('T')[0];
                       const newSlots = [...slots];
+                      const currentSlot = newSlots[activeSlotIndex];
+                      const isNew =
+                        currentSlot.color === 'empty' && !currentSlot.date;
+
                       newSlots[activeSlotIndex] = {
-                        ...newSlots[activeSlotIndex],
+                        ...currentSlot,
                         date: today,
+                        id: isNew
+                          ? Math.max(0, ...slots.map((s) => s.id || 0)) + 1
+                          : currentSlot.id,
                       };
                       setSlots(newSlots);
+                      setLastModifiedIndex(activeSlotIndex);
+                      setModificationTick((prev) => prev + 1);
                     }}
                     className='px-2 py-1 bg-stone-100 border border-stone-200 text-stone-600 rounded-md text-[10px] font-medium hover:bg-stone-200 hover:text-stone-800 transition-all flex items-center gap-1'
                   >
@@ -469,11 +547,21 @@ export default function App() {
                   value={slots[activeSlotIndex].date}
                   onChange={(e) => {
                     const newSlots = [...slots];
+                    const currentSlot = newSlots[activeSlotIndex];
+                    const isNew =
+                      currentSlot.color === 'empty' && !currentSlot.date;
+
                     newSlots[activeSlotIndex] = {
-                      ...newSlots[activeSlotIndex],
+                      ...currentSlot,
                       date: e.target.value,
+                      id:
+                        isNew && e.target.value !== ''
+                          ? Math.max(0, ...slots.map((s) => s.id || 0)) + 1
+                          : currentSlot.id,
                     };
                     setSlots(newSlots);
+                    setLastModifiedIndex(activeSlotIndex);
+                    setModificationTick((prev) => prev + 1);
                   }}
                   className='w-full border border-stone-300 rounded-lg p-2.5 outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500'
                 />
@@ -487,12 +575,20 @@ export default function App() {
                   <button
                     onClick={() => {
                       const newSlots = [...slots];
-                      const prevColor = newSlots[activeSlotIndex].color;
+                      const currentSlot = newSlots[activeSlotIndex];
+                      const prevColor = currentSlot.color;
+                      const isNew = prevColor === 'empty' && !currentSlot.date;
+
                       newSlots[activeSlotIndex] = {
-                        ...newSlots[activeSlotIndex],
+                        ...currentSlot,
                         color: 'pink',
+                        id: isNew
+                          ? Math.max(0, ...slots.map((s) => s.id || 0)) + 1
+                          : currentSlot.id,
                       };
                       setSlots(newSlots);
+                      setLastModifiedIndex(activeSlotIndex);
+                      setModificationTick((prev) => prev + 1);
                       if (prevColor === 'empty') {
                         const newTotal = totalCount + 1;
                         const milestones = [10, 20, 30, 40];
@@ -508,12 +604,20 @@ export default function App() {
                   <button
                     onClick={() => {
                       const newSlots = [...slots];
-                      const prevColor = newSlots[activeSlotIndex].color;
+                      const currentSlot = newSlots[activeSlotIndex];
+                      const prevColor = currentSlot.color;
+                      const isNew = prevColor === 'empty' && !currentSlot.date;
+
                       newSlots[activeSlotIndex] = {
-                        ...newSlots[activeSlotIndex],
+                        ...currentSlot,
                         color: 'blue',
+                        id: isNew
+                          ? Math.max(0, ...slots.map((s) => s.id || 0)) + 1
+                          : currentSlot.id,
                       };
                       setSlots(newSlots);
+                      setLastModifiedIndex(activeSlotIndex);
+                      setModificationTick((prev) => prev + 1);
                       if (prevColor === 'empty') {
                         const newTotal = totalCount + 1;
                         const milestones = [10, 20, 30, 40];
@@ -530,9 +634,15 @@ export default function App() {
                 <button
                   onClick={() => {
                     const newSlots = [...slots];
-                    newSlots[activeSlotIndex] = { color: 'empty', date: '' };
+                    newSlots[activeSlotIndex] = {
+                      color: 'empty',
+                      date: '',
+                      id: undefined,
+                    };
                     setSlots(newSlots);
                     setPendingCelebration(false);
+                    setLastModifiedIndex(activeSlotIndex);
+                    setModificationTick((prev) => prev + 1);
                   }}
                   className={`w-full mt-3 py-2.5 rounded-xl border-2 font-medium transition-all ${slots[activeSlotIndex].color === 'empty' ? 'bg-stone-100 border-stone-300 text-stone-700' : 'border-stone-100 hover:bg-stone-50 text-stone-500'}`}
                 >
