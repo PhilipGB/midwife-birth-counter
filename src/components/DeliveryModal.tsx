@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { SlotColor, SlotData } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
+import { SlotColor, SlotData, DeliveryType } from '../types';
 
 interface DeliveryModalProps {
   slot: SlotData;
@@ -18,14 +19,28 @@ export const DeliveryModal = ({
 }: DeliveryModalProps) => {
   const [localDate, setLocalDate] = useState(slot.date);
   const [localColor, setLocalColor] = useState<SlotColor>(slot.color);
+  const [localType, setLocalType] = useState<DeliveryType | undefined>(
+    slot.deliveryType,
+  );
+  const [localReflectivePractice, setLocalReflectivePractice] = useState(
+    slot.reflectivePractice || '',
+  );
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     setLocalDate(slot.date);
     setLocalColor(slot.color);
+    setLocalType(slot.deliveryType);
+    setLocalReflectivePractice(slot.reflectivePractice || '');
   }, [slot]);
 
   const handleSave = () => {
-    onUpdate({ date: localDate, color: localColor });
+    onUpdate({
+      date: localDate,
+      color: localColor,
+      deliveryType: localType,
+      reflectivePractice: localReflectivePractice,
+    });
     onClose();
   };
 
@@ -78,6 +93,30 @@ export const DeliveryModal = ({
           </div>
 
           <div>
+            <label className='block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2'>
+              Delivery Type (Optional)
+            </label>
+            <select
+              value={localType || ''}
+              onChange={(e) =>
+                setLocalType((e.target.value as DeliveryType) || undefined)
+              }
+              className='w-full p-3 rounded-xl border border-stone-200 outline-none focus:ring-2 focus:ring-stone-200 transition-all text-stone-800 font-medium bg-white'
+            >
+              <option value='' disabled>
+                Select delivery type...
+              </option>
+              <option value='SVD'>Spontaneous Vaginal Delivery (SVD)</option>
+              <option value='Instrumental'>
+                Instrumental (Forceps/Ventouse)
+              </option>
+              <option value='Caesarean'>Caesarean Section</option>
+              <option value='WaterBirth'>Water Birth</option>
+              <option value='Assisted'>Assisted Delivery</option>
+            </select>
+          </div>
+
+          <div>
             <label className='block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-3'>
               Gender / Color
             </label>
@@ -98,6 +137,58 @@ export const DeliveryModal = ({
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className='pt-2'>
+            <button
+              type='button'
+              onClick={() => setIsExpanded(!isExpanded)}
+              className={`flex items-center justify-between w-full p-3 rounded-xl transition-all text-sm font-semibold ${
+                isExpanded
+                  ? 'bg-stone-100 text-stone-800'
+                  : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
+              }`}
+            >
+              <span>Reflective Practice (Optional)</span>
+              <svg
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  isExpanded ? 'rotate-180' : ''
+                }`}
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth='2'
+                  d='M19 9l-7 7-7-7'
+                />
+              </svg>
+            </button>
+
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  className='overflow-hidden'
+                >
+                  <div className='pt-3'>
+                    <textarea
+                      value={localReflectivePractice}
+                      onChange={(e) =>
+                        setLocalReflectivePractice(e.target.value)
+                      }
+                      placeholder='Record your reflections here...'
+                      className='w-full p-3 rounded-xl border border-stone-200 outline-none focus:ring-2 focus:ring-stone-200 transition-all text-stone-800 font-medium min-h-25 resize-none'
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

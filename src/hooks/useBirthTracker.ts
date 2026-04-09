@@ -55,6 +55,16 @@ export function useBirthTracker() {
   );
   const totalCount = pinkCount + blueCount;
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    slots.forEach((s) => {
+      if (s.deliveryType) {
+        counts[s.deliveryType] = (counts[s.deliveryType] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [slots]);
+
   const sortedSlots = useMemo(() => {
     return [...slots]
       .map((slot, index) => ({ slot, index }))
@@ -187,6 +197,7 @@ export function useBirthTracker() {
       totalCount,
       pinkCount,
       blueCount,
+      typeCounts,
       sortedSlots,
       predictedDate,
     },

@@ -78,6 +78,7 @@ function App() {
           totalCount={state.totalCount}
           pinkCount={state.pinkCount}
           blueCount={state.blueCount}
+          typeCounts={state.typeCounts}
           predictedDate={state.predictedDate}
           exportBackup={actions.exportBackup}
           onImportBackup={handleImportBackup}

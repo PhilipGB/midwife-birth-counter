@@ -1,48 +1,67 @@
-# Implementation Plan
+# Implementation Plan: Reflective Practice Integration
 
-[Overview]
-Create comprehensive project documentation to facilitate rapid contextualization for developers and AI agents.
+## [Overview]
 
-The current project lacks documentation (README.md is empty), making it difficult for new contributors or AI agents to understand the application's purpose, technical architecture, and implementation details. This project is a "Midwife Birth Counter," a React-based tool for midwife students to track their delivery progress. It features a visual board of 40 footprints, persistent storage via localStorage, and data portability through JSON backup/restore. The documentation will be centralized in a detailed README.md to provide a single, high-context entry point that explains both the "what" and the "how" of the application.
+Integrate an optional Reflective Practice text field into the birth delivery recording process.
 
-[Types]
-No changes to the codebase type system are required. The documentation will describe existing types:
+The goal is to allow midwives to record reflective notes for each delivery. This field will be integrated into the `DeliveryModal` as an optional, initially hidden section that expands with an animation when the user clicks a toggle button. This ensures the modal remains concise for quick entries while providing space for detailed reflection when needed.
 
-- `SlotColor`: Union type ('empty' | 'pink' | 'blue') used to categorize the delivery.
-- `SlotData`: Interface { color: SlotColor; date: string; } representing a single delivery slot.
+## [Types]
 
-[Files]
-One file will be modified.
+Update the `SlotData` interface to support reflective notes.
 
-- `README.md`: Overwritten with comprehensive documentation including:
-  - Project Purpose: High-level goal of the app.
-  - Technical Stack: React 19, Vite, Tailwind CSS, canvas-confetti.
-  - Core Features: Visual tracking, local persistence, backup/restore.
-  - Implementation Details: Explanation of the state management and the `localStorage` sync logic.
-  - Component Architecture: Description of the `App` and `Footprint` components.
-  - Data Model: Documentation of the `SlotData` structure.
+- `SlotData` interface in `src/types.ts`:
+  - Add `reflectivePractice?: string`: An optional string to store the reflective notes for a specific delivery slot.
 
-[Functions]
-No function modifications are required. The documentation will describe existing key functions:
+## [Files]
 
-- `triggerCelebration(count: number)`: Triggers a multi-burst confetti animation when delivery milestones (10, 20, 30, 40) are reached.
-- `exportBackup()`: Serializes the current state (name, years, slots) into a JSON blob and triggers a browser download.
-- `importBackup(e: React.ChangeEvent<HTMLInputElement>)`: Reads a JSON file and stages the data for confirmation before overwriting the current state.
-- `confirmImport()`: Finalizes the import process by updating the application state with the staged backup data.
+Modify existing files to implement the new field and its animation.
 
-[Classes]
-No classes are used in this project.
+- `src/types.ts`: Update `SlotData` interface.
+- `src/components/DeliveryModal.tsx`:
+  - Add state for the reflective practice text.
+  - Add state for the expansion toggle.
+  - Implement the animated UI section using `motion`.
+  - Update save and initialization logic.
 
-[Dependencies]
-No dependency modifications are required.
+## [Functions]
 
-[Testing]
-Single-step validation:
+Modify functions within `DeliveryModal.tsx` to handle the new data.
 
-- Verify that `README.md` is correctly populated and covers all sections mentioned above.
-- Ensure the technical details match the actual implementation in `src/App.tsx`.
+- `DeliveryModal` (component):
+  - `useEffect`: Update to initialize `localReflectivePractice` from `slot.reflectivePractice`.
+  - `handleSave`: Update to include `reflectivePractice: localReflectivePractice` in the `onUpdate` call.
 
-[Implementation Order]
-Single step implementation sequence:
+## [Classes]
 
-1. Write the full content of the comprehensive `README.md`.
+No class modifications required.
+
+## [Dependencies]
+
+Utilize existing dependencies for animation.
+
+- `motion`: Use the already installed `motion` (Framer Motion) library to handle the smooth expansion and collapse of the reflective practice text area.
+
+## [Testing]
+
+Verify the feature through manual UI testing and state persistence.
+
+- **UI Testing**:
+  - Open `DeliveryModal` and verify the Reflective Practice section is hidden by default.
+  - Click the expand button and verify the text area appears with a smooth animation.
+  - Enter text and save; verify the modal closes.
+  - Re-open the same slot and verify the reflective notes are preserved and can be edited.
+- **Persistence**: Verify that the data is correctly saved to `localStorage` via the `useBirthTracker` hook.
+
+## [Implementation Order]
+
+Sequential steps to ensure stability.
+
+1. **Type Update**: Add `reflectivePractice` to `SlotData` in `src/types.ts`.
+2. **State Integration**: Add `localReflectivePractice` and `isExpanded` states to `DeliveryModal.tsx`.
+3. **Initialization Logic**: Update `useEffect` in `DeliveryModal.tsx` to load existing reflective notes.
+4. **UI Implementation**:
+   - Add the toggle button in `DeliveryModal.tsx`.
+   - Implement the animated `motion.div` containing the `textarea`.
+5. **Persistence Logic**: Update `handleSave` in `DeliveryModal.tsx` to persist the reflective notes.
+6. **Final Polish**: Style the text area and button to match the existing aesthetic (stone/pink/blue theme).

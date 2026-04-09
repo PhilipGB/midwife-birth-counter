@@ -1,9 +1,18 @@
 export type SlotColor = 'empty' | 'pink' | 'blue';
 
+export type DeliveryType =
+  | 'SVD'
+  | 'Instrumental'
+  | 'Caesarean'
+  | 'WaterBirth'
+  | 'Assisted';
+
 export interface SlotData {
   color: SlotColor;
   date: string;
   id?: number;
+  deliveryType?: DeliveryType;
+  reflectivePractice?: string;
 }
 
 export interface TrackerState {

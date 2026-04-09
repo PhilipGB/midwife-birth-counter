@@ -4,16 +4,26 @@ interface StatsPanelProps {
   totalCount: number;
   pinkCount: number;
   blueCount: number;
+  typeCounts: Record<string, number>;
   predictedDate: string | null;
   exportBackup: () => void;
   onImportBackup: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onResetBoard: () => void;
 }
 
+const DELIVERY_TYPE_LABELS: Record<string, string> = {
+  SVD: 'Spontaneous Vaginal Delivery (SVD)',
+  Instrumental: 'Instrumental (Forceps/Ventouse)',
+  Caesarean: 'Caesarean Section',
+  WaterBirth: 'Water Birth',
+  Assisted: 'Assisted Delivery',
+};
+
 export const StatsPanel = ({
   totalCount,
   pinkCount,
   blueCount,
+  typeCounts,
   predictedDate,
   exportBackup,
   onImportBackup,
@@ -74,6 +84,31 @@ export const StatsPanel = ({
             <span className='text-3xl font-bold text-blue-500'>
               {blueCount}
             </span>
+          </div>
+        </div>
+
+        <div className='mt-6 p-4 bg-stone-50 rounded-2xl border border-stone-100'>
+          <h3 className='text-xs font-bold text-stone-400 uppercase tracking-widest mb-3'>
+            Delivery Type Breakdown
+          </h3>
+          <div className='space-y-2'>
+            {Object.entries(typeCounts).length > 0 ? (
+              Object.entries(typeCounts).map(([type, count]) => (
+                <div
+                  key={type}
+                  className='flex justify-between items-center text-sm'
+                >
+                  <span className='text-stone-600 font-medium'>
+                    {DELIVERY_TYPE_LABELS[type] || type}
+                  </span>
+                  <span className='text-stone-800 font-bold'>{count}</span>
+                </div>
+              ))
+            ) : (
+              <p className='text-stone-400 text-xs italic'>
+                No types recorded yet
+              </p>
+            )}
           </div>
         </div>
       </div>
