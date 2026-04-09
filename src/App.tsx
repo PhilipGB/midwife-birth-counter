@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 
 type SlotColor = 'empty' | 'pink' | 'blue';
 interface SlotData {
@@ -106,6 +107,14 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
+  const [pendingCelebration, setPendingCelebration] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState<{
+    name: string;
+    startYear: string;
+    endYear: string;
+    slots: SlotData[];
+  } | null>(null);
 
   useEffect(() => {
     const savedData = localStorage.getItem('midwife-tracker');
@@ -148,7 +157,97 @@ export default function App() {
   const blueCount = slots.filter((s) => s.color === 'blue').length;
   const totalCount = pinkCount + blueCount;
 
+  useEffect(() => {
+    if (activeSlotIndex === null && pendingCelebration) {
+      triggerCelebration(totalCount);
+      setPendingCelebration(false);
+    }
+  }, [activeSlotIndex, pendingCelebration, totalCount]);
+
+  const triggerCelebration = (count: number) => {
+    const milestones = [10, 20, 30, 40];
+    if (milestones.includes(count)) {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const randomInRange = (min: number, max: number) =>
+        Math.random() * (max - min) + min;
+
+      const interval: any = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        });
+      }, 250);
+    }
+  };
+
   const years = Array.from({ length: 15 }, (_, i) => (2020 + i).toString());
+
+  const exportBackup = () => {
+    const data = { name, startYear, endYear, slots };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `midwife-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (
+          data.name &&
+          data.startYear &&
+          data.endYear &&
+          Array.isArray(data.slots) &&
+          data.slots.length === 40
+        ) {
+          setPendingImportData(data);
+          setIsImportConfirmOpen(true);
+        } else {
+          alert('Invalid backup file format.');
+        }
+      } catch (err) {
+        alert('Error reading backup file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    if (pendingImportData) {
+      setName(pendingImportData.name);
+      setStartYear(pendingImportData.startYear);
+      setEndYear(pendingImportData.endYear);
+      setSlots(pendingImportData.slots);
+      setPendingImportData(null);
+      setIsImportConfirmOpen(false);
+    }
+  };
 
   return (
     <div className='min-h-screen flex flex-col items-center py-8 sm:py-12 px-4 font-sans'>
@@ -198,7 +297,7 @@ export default function App() {
           </div>
 
           {/* Grid */}
-          <div className='grid grid-cols-8 gap-x-2 gap-y-6 sm:gap-x-4 sm:gap-y-8 relative z-10 px-2 sm:px-4'>
+          <div className='grid grid-cols-5 sm:grid-cols-8 gap-x-2 gap-y-6 sm:gap-x-4 sm:gap-y-8 relative z-10 px-2 sm:px-4'>
             {slots.map((slot, i) => (
               <button
                 key={i}
@@ -243,6 +342,14 @@ export default function App() {
           </div>
 
           <div className='flex flex-col gap-4'>
+            <div className='mb-2'>
+              <div className='w-full h-3 bg-stone-100 rounded-full overflow-hidden border border-stone-200'>
+                <div
+                  className='h-full bg-gradient-to-r from-pink-300 via-stone-300 to-blue-300 transition-all duration-700 ease-out'
+                  style={{ width: `${(totalCount / 40) * 100}%` }}
+                ></div>
+              </div>
+            </div>
             <div className='flex justify-between items-end pb-4 border-b border-stone-100'>
               <span className='text-stone-500 font-medium'>
                 Total Deliveries
@@ -273,6 +380,23 @@ export default function App() {
             </div>
           </div>
 
+          <div className='flex gap-3 mt-4'>
+            <button
+              onClick={exportBackup}
+              className='flex-1 py-3 rounded-xl text-stone-500 hover:bg-stone-100 hover:text-stone-800 transition-colors font-semibold text-xs border border-stone-200'
+            >
+              Export Backup
+            </button>
+            <label className='flex-1 py-3 rounded-xl text-stone-500 hover:bg-stone-100 hover:text-stone-800 transition-colors font-semibold text-xs border border-stone-200 text-center cursor-pointer'>
+              Import Backup
+              <input
+                type='file'
+                accept='.json'
+                className='hidden'
+                onChange={importBackup}
+              />
+            </label>
+          </div>
           <button
             onClick={() => setIsResetModalOpen(true)}
             className='mt-4 w-full py-4 rounded-xl text-stone-500 hover:bg-stone-100 hover:text-stone-800 transition-colors font-semibold text-sm border border-stone-200'
@@ -298,9 +422,48 @@ export default function App() {
 
             <div className='space-y-5'>
               <div>
-                <label className='block text-sm font-medium text-stone-700 mb-1'>
-                  Delivery Date
-                </label>
+                <div className='flex justify-between items-center mb-1'>
+                  <label className='block text-sm font-medium text-stone-700'>
+                    Delivery Date
+                  </label>
+                  <button
+                    onClick={() => {
+                      const today = new Date().toISOString().split('T')[0];
+                      const newSlots = [...slots];
+                      newSlots[activeSlotIndex] = {
+                        ...newSlots[activeSlotIndex],
+                        date: today,
+                      };
+                      setSlots(newSlots);
+                    }}
+                    className='px-2 py-1 bg-stone-100 border border-stone-200 text-stone-600 rounded-md text-[10px] font-medium hover:bg-stone-200 hover:text-stone-800 transition-all flex items-center gap-1'
+                  >
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      width='10'
+                      height='10'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke='currentColor'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    >
+                      <rect
+                        x='3'
+                        y='4'
+                        width='18'
+                        height='18'
+                        rx='2'
+                        ry='2'
+                      ></rect>
+                      <line x1='16' y1='2' x2='16' y2='6'></line>
+                      <line x1='8' y1='2' x2='8' y2='6'></line>
+                      <line x1='3' y1='10' x2='21' y2='10'></line>
+                    </svg>
+                    Set to Today
+                  </button>
+                </div>
                 <input
                   type='date'
                   value={slots[activeSlotIndex].date}
@@ -324,11 +487,19 @@ export default function App() {
                   <button
                     onClick={() => {
                       const newSlots = [...slots];
+                      const prevColor = newSlots[activeSlotIndex].color;
                       newSlots[activeSlotIndex] = {
                         ...newSlots[activeSlotIndex],
                         color: 'pink',
                       };
                       setSlots(newSlots);
+                      if (prevColor === 'empty') {
+                        const newTotal = totalCount + 1;
+                        const milestones = [10, 20, 30, 40];
+                        if (milestones.includes(newTotal)) {
+                          setPendingCelebration(true);
+                        }
+                      }
                     }}
                     className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${slots[activeSlotIndex].color === 'pink' ? 'bg-pink-50 border-pink-400 text-pink-700' : 'border-stone-100 hover:border-pink-200 text-stone-600'}`}
                   >
@@ -337,11 +508,19 @@ export default function App() {
                   <button
                     onClick={() => {
                       const newSlots = [...slots];
+                      const prevColor = newSlots[activeSlotIndex].color;
                       newSlots[activeSlotIndex] = {
                         ...newSlots[activeSlotIndex],
                         color: 'blue',
                       };
                       setSlots(newSlots);
+                      if (prevColor === 'empty') {
+                        const newTotal = totalCount + 1;
+                        const milestones = [10, 20, 30, 40];
+                        if (milestones.includes(newTotal)) {
+                          setPendingCelebration(true);
+                        }
+                      }
                     }}
                     className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${slots[activeSlotIndex].color === 'blue' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-stone-100 hover:border-blue-200 text-stone-600'}`}
                   >
@@ -353,6 +532,7 @@ export default function App() {
                     const newSlots = [...slots];
                     newSlots[activeSlotIndex] = { color: 'empty', date: '' };
                     setSlots(newSlots);
+                    setPendingCelebration(false);
                   }}
                   className={`w-full mt-3 py-2.5 rounded-xl border-2 font-medium transition-all ${slots[activeSlotIndex].color === 'empty' ? 'bg-stone-100 border-stone-300 text-stone-700' : 'border-stone-100 hover:bg-stone-50 text-stone-500'}`}
                 >
@@ -372,6 +552,42 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* Import Confirmation Modal */}
+      {isImportConfirmOpen && (
+        <div
+          className='fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4'
+          onClick={() => setIsImportConfirmOpen(false)}
+        >
+          <div
+            className='bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className='text-xl font-bold text-stone-800 mb-2'>
+              Import Backup
+            </h3>
+            <p className='text-stone-600 mb-6'>
+              This will overwrite your current board and all recorded
+              deliveries. Are you sure you want to proceed?
+            </p>
+
+            <div className='flex gap-3 justify-end'>
+              <button
+                onClick={() => setIsImportConfirmOpen(false)}
+                className='px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-xl transition-colors font-medium'
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmImport}
+                className='px-4 py-2 bg-stone-800 text-white rounded-xl hover:bg-stone-700 transition-colors font-medium'
+              >
+                Confirm Overwrite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reset Confirmation Modal */}
       {isResetModalOpen && (
         <div
