@@ -1,116 +1,41 @@
 import { useState, useEffect, useMemo } from 'react';
-import { SlotData, TrackerState } from '../types';
+import { SlotData, TrackerState, ThemeMode } from '../types';
 import confetti from 'canvas-confetti';
+import { storageService } from '../services/storage';
+import { calculateBirthStats } from '../utils/birth-stats';
 
 export function useBirthTracker() {
   const [name, setName] = useState('Enter Your Name Here');
   const [startYear, setStartYear] = useState('2025');
   const [endYear, setEndYear] = useState('2028');
+  const [theme, setTheme] = useState<ThemeMode>('light');
   const [slots, setSlots] = useState<SlotData[]>(
     Array.from({ length: 40 }, () => ({ color: 'empty', date: '' })),
   );
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage
+  // Load from storage
   useEffect(() => {
-    const savedData = localStorage.getItem('midwife-tracker');
+    const savedData = storageService.load();
     if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (parsed.name) setName(parsed.name);
-        if (parsed.startYear) setStartYear(parsed.startYear);
-        if (parsed.endYear) setEndYear(parsed.endYear);
-
-        if (parsed.slots && parsed.slots.length === 40) {
-          const migratedSlots = parsed.slots.map((s: any) =>
-            typeof s === 'string' ? { color: s, date: '' } : s,
-          );
-          setSlots(migratedSlots);
-        }
-      } catch (e) {
-        console.error('Failed to parse saved data', e);
-      }
+      setName(savedData.name);
+      setStartYear(savedData.startYear);
+      setEndYear(savedData.endYear);
+      setTheme(savedData.theme);
+      setSlots(savedData.slots);
     }
     setIsLoaded(true);
   }, []);
 
-  // Sync to localStorage
+  // Sync to storage
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem(
-        'midwife-tracker',
-        JSON.stringify({ name, startYear, endYear, slots }),
-      );
+      storageService.save({ name, startYear, endYear, slots, theme });
     }
-  }, [name, startYear, endYear, slots, isLoaded]);
+  }, [name, startYear, endYear, slots, theme, isLoaded]);
 
-  // Computed Stats
-  const pinkCount = useMemo(
-    () => slots.filter((s) => s.color === 'pink').length,
-    [slots],
-  );
-  const blueCount = useMemo(
-    () => slots.filter((s) => s.color === 'blue').length,
-    [slots],
-  );
-  const totalCount = pinkCount + blueCount;
-
-  const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    slots.forEach((s) => {
-      if (s.deliveryType) {
-        counts[s.deliveryType] = (counts[s.deliveryType] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [slots]);
-
-  const sortedSlots = useMemo(() => {
-    return [...slots]
-      .map((slot, index) => ({ slot, index }))
-      .sort((a, b) => {
-        const sA = a.slot;
-        const sB = b.slot;
-        if (sA.date && sB.date) {
-          const dateComp = sA.date.localeCompare(sB.date);
-          if (dateComp !== 0) return dateComp;
-          return (sA.id || 0) - (sB.id || 0);
-        }
-        if (sA.date) return -1;
-        if (sB.date) return 1;
-        if (sA.color !== 'empty' && sB.color === 'empty') return -1;
-        if (sA.color === 'empty' && sB.color !== 'empty') return 1;
-        return 0;
-      });
-  }, [slots]);
-
-  const predictedDate = useMemo(() => {
-    if (totalCount >= 40) return 'Goal reached!';
-
-    const datedSlots = slots
-      .filter((s) => s.date)
-      .map((s) => new Date(s.date))
-      .sort((a, b) => a.getTime() - b.getTime());
-
-    if (datedSlots.length < 2) return null;
-
-    const firstBirth = datedSlots[0];
-    const lastBirth = datedSlots[datedSlots.length - 1];
-    const timeDiff = lastBirth.getTime() - firstBirth.getTime();
-    const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
-    const avgDaysPerBirth = daysDiff / (datedSlots.length - 1);
-
-    const remainingBirths = 40 - totalCount;
-    const estimatedDaysRemaining = remainingBirths * avgDaysPerBirth;
-    const predictedDate = new Date(
-      lastBirth.getTime() + estimatedDaysRemaining * 1000 * 60 * 60 * 24,
-    );
-
-    return predictedDate.toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-    });
-  }, [slots, totalCount]);
+  // Computed Stats via Utility
+  const stats = useMemo(() => calculateBirthStats(slots), [slots]);
 
   // Actions
   const updateSlot = (index: number, updates: Partial<SlotData>) => {
@@ -166,7 +91,7 @@ export function useBirthTracker() {
   };
 
   const exportBackup = () => {
-    const data: TrackerState = { name, startYear, endYear, slots };
+    const data: TrackerState = { name, startYear, endYear, slots, theme };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: 'application/json',
     });
@@ -176,6 +101,58 @@ export function useBirthTracker() {
     link.download = `midwife-backup-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const importBackup = (jsonString: string) => {
+    try {
+      const parsed = JSON.parse(jsonString);
+
+      // Robust Validation
+      if (!parsed.name || !Array.isArray(parsed.slots)) {
+        throw new Error('Missing essential data: name or slots');
+      }
+
+      if (parsed.slots.length !== 40) {
+        throw new Error('Backup must contain exactly 40 slots');
+      }
+
+      // Validate each slot
+      const validatedSlots = parsed.slots.map((s: any, idx: number) => {
+        if (typeof s !== 'object' || s === null) {
+          throw new Error(`Slot ${idx + 1} is invalid`);
+        }
+        return {
+          color: ['pink', 'blue', 'empty'].includes(s.color)
+            ? s.color
+            : 'empty',
+          date: typeof s.date === 'string' ? s.date : '',
+          deliveryType:
+            typeof s.deliveryType === 'string' ? s.deliveryType : undefined,
+          id: typeof s.id === 'number' ? s.id : undefined,
+        };
+      });
+
+      return {
+        success: true,
+        data: {
+          name: String(parsed.name),
+          startYear: String(parsed.startYear || '2025'),
+          endYear: String(parsed.endYear || '2028'),
+          theme: ['light', 'dark'].includes(parsed.theme)
+            ? parsed.theme
+            : 'light',
+          slots: validatedSlots,
+        },
+      };
+    } catch (e) {
+      return {
+        success: false,
+        error:
+          e instanceof Error
+            ? e.message
+            : 'An unknown error occurred during import',
+      };
+    }
   };
 
   const resetBoard = () => {
@@ -194,21 +171,19 @@ export function useBirthTracker() {
       startYear,
       endYear,
       slots,
-      totalCount,
-      pinkCount,
-      blueCount,
-      typeCounts,
-      sortedSlots,
-      predictedDate,
+      theme,
+      ...stats,
     },
     actions: {
       setName,
       setStartYear,
       setEndYear,
+      setTheme,
       updateSlot,
       setSlotsBulk,
       triggerCelebration,
       exportBackup,
+      importBackup,
       resetBoard,
     },
   };

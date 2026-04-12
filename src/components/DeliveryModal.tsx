@@ -46,12 +46,12 @@ export const DeliveryModal = ({
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200'>
-      <div className='bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-stone-100 animate-in zoom-in-95 duration-200'>
+      <div className='bg-panel-bg rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-panel-border animate-in zoom-in-95 duration-200'>
         <div className='flex justify-between items-center mb-6'>
-          <h3 className='text-2xl font-bold text-stone-800'>Record Delivery</h3>
+          <h3 className='text-2xl font-bold text-text-main'>Record Delivery</h3>
           <button
             onClick={onClose}
-            className='p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors'
+            className='p-2 rounded-full hover:bg-panel-border text-text-muted hover:text-text-main transition-colors'
           >
             <svg
               className='w-6 h-6'
@@ -71,7 +71,7 @@ export const DeliveryModal = ({
 
         <div className='space-y-6'>
           <div>
-            <label className='block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2'>
+            <label className='block text-sm font-semibold text-text-muted uppercase tracking-wider mb-2'>
               Delivery Date
             </label>
             <div className='flex gap-2'>
@@ -79,13 +79,13 @@ export const DeliveryModal = ({
                 type='date'
                 value={localDate}
                 onChange={(e) => setLocalDate(e.target.value)}
-                className='flex-1 p-3 rounded-xl border border-stone-200 outline-none focus:ring-2 focus:ring-stone-200 transition-all text-stone-800 font-mono'
+                className='flex-1 p-3 rounded-xl border border-panel-border outline-none focus:ring-2 focus:ring-panel-border transition-all text-text-main font-mono'
               />
               <button
                 onClick={() =>
                   setLocalDate(new Date().toISOString().split('T')[0])
                 }
-                className='px-4 py-2 rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 text-sm font-semibold transition-colors whitespace-nowrap'
+                className='px-4 py-2 rounded-xl bg-panel-border text-text-muted hover:bg-panel-border/80 text-sm font-semibold transition-colors whitespace-nowrap'
               >
                 Today
               </button>
@@ -93,7 +93,7 @@ export const DeliveryModal = ({
           </div>
 
           <div>
-            <label className='block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2'>
+            <label className='block text-sm font-semibold text-text-muted uppercase tracking-wider mb-2'>
               Delivery Type (Optional)
             </label>
             <select
@@ -101,7 +101,7 @@ export const DeliveryModal = ({
               onChange={(e) =>
                 setLocalType((e.target.value as DeliveryType) || undefined)
               }
-              className='w-full p-3 rounded-xl border border-stone-200 outline-none focus:ring-2 focus:ring-stone-200 transition-all text-stone-800 font-medium bg-white'
+              className='w-full p-3 rounded-xl border border-panel-border outline-none focus:ring-2 focus:ring-panel-border transition-all text-text-main font-medium bg-panel-bg'
             >
               <option value='' disabled>
                 Select delivery type...
@@ -117,7 +117,7 @@ export const DeliveryModal = ({
           </div>
 
           <div>
-            <label className='block text-sm font-semibold text-stone-500 uppercase tracking-wider mb-3'>
+            <label className='block text-sm font-semibold text-text-muted uppercase tracking-wider mb-3'>
               Gender / Color
             </label>
             <div className='grid grid-cols-2 gap-3'>
@@ -128,9 +128,9 @@ export const DeliveryModal = ({
                   className={`py-3 px-2 rounded-xl border-2 transition-all capitalize font-semibold text-sm ${
                     localColor === color
                       ? color === 'pink'
-                        ? 'border-pink-400 bg-pink-50 text-pink-600'
-                        : 'border-blue-400 bg-blue-50 text-blue-600'
-                      : 'border-stone-100 bg-white text-stone-400 hover:border-stone-200'
+                        ? 'border-pink-400 bg-pink-50 dark:bg-pink-900/30 text-pink-400 dark:text-pink-400'
+                        : 'border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-400 dark:text-blue-400'
+                      : 'border-panel-border bg-panel-bg text-text-muted hover:border-panel-border'
                   }`}
                 >
                   {color === 'pink' ? 'Girl' : 'Boy'}
@@ -145,8 +145,8 @@ export const DeliveryModal = ({
               onClick={() => setIsExpanded(!isExpanded)}
               className={`flex items-center justify-between w-full p-3 rounded-xl transition-all text-sm font-semibold ${
                 isExpanded
-                  ? 'bg-stone-100 text-stone-800'
-                  : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
+                  ? 'bg-panel-border text-text-main'
+                  : 'text-text-muted hover:bg-panel-border/50 hover:text-text-main'
               }`}
             >
               <span>Reflective Practice (Optional)</span>
@@ -183,7 +183,7 @@ export const DeliveryModal = ({
                         setLocalReflectivePractice(e.target.value)
                       }
                       placeholder='Record your reflections here...'
-                      className='w-full p-3 rounded-xl border border-stone-200 outline-none focus:ring-2 focus:ring-stone-200 transition-all text-stone-800 font-medium min-h-25 resize-none'
+                      className='w-full p-3 rounded-xl border border-panel-border outline-none focus:ring-2 focus:ring-panel-border transition-all text-text-main font-medium min-h-25 resize-none'
                     />
                   </div>
                 </motion.div>
@@ -195,19 +195,19 @@ export const DeliveryModal = ({
         <div className='mt-8 flex gap-3'>
           <button
             onClick={onClear}
-            className='flex-1 py-3 rounded-xl text-red-500 hover:bg-red-50 font-semibold transition-colors'
+            className='flex-1 py-3 rounded-xl text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-semibold transition-colors'
           >
             Clear Slot
           </button>
           <button
             onClick={onClose}
-            className='flex-1 py-3 rounded-xl text-stone-500 hover:bg-stone-100 font-semibold transition-colors'
+            className='flex-1 py-3 rounded-xl text-text-muted hover:bg-panel-border font-semibold transition-colors'
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className='flex-1 py-3 rounded-xl bg-stone-800 text-white hover:bg-stone-700 font-semibold shadow-lg transition-all active:scale-95'
+            className='flex-1 py-3 rounded-xl bg-text-main text-app-bg hover:opacity-90 font-semibold shadow-lg transition-all active:scale-95'
           >
             Save Entry
           </button>

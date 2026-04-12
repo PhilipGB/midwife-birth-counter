@@ -8,7 +8,11 @@ interface FootprintProps {
 export const Footprint = ({ color, className }: FootprintProps) => {
   const isEmpty = color === 'empty';
   const fill =
-    color === 'pink' ? '#ff9eb5' : color === 'blue' ? '#7cd0ff' : 'transparent';
+    color === 'pink'
+      ? 'var(--footprint-pink)'
+      : color === 'blue'
+        ? 'var(--footprint-blue)'
+        : 'transparent';
 
   return (
     <svg
@@ -24,8 +28,8 @@ export const Footprint = ({ color, className }: FootprintProps) => {
     >
       {isEmpty && (
         <g
-          fill='rgba(80, 50, 20, 0.15)'
-          stroke='rgba(0,0,0,0.1)'
+          fill='var(--footprint-empty-fill)'
+          stroke='var(--footprint-empty-stroke)'
           strokeWidth='1'
         >
           <ellipse

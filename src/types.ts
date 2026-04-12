@@ -7,6 +7,8 @@ export type DeliveryType =
   | 'WaterBirth'
   | 'Assisted';
 
+export type ThemeMode = 'light' | 'dark';
+
 export interface SlotData {
   color: SlotColor;
   date: string;
@@ -20,4 +22,5 @@ export interface TrackerState {
   startYear: string;
   endYear: string;
   slots: SlotData[];
+  theme: ThemeMode;
 }

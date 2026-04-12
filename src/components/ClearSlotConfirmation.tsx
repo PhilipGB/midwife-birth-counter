@@ -13,9 +13,9 @@ export const ClearSlotConfirmation = ({
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200'>
-      <div className='bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-stone-100 animate-in zoom-in-95 duration-200'>
+      <div className='bg-panel-bg rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-panel-border animate-in zoom-in-95 duration-200'>
         <div className='text-center mb-6'>
-          <div className='w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4'>
+          <div className='w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4'>
             <svg
               className='w-8 h-8'
               fill='none'
@@ -30,10 +30,10 @@ export const ClearSlotConfirmation = ({
               />
             </svg>
           </div>
-          <h3 className='text-2xl font-bold text-stone-800'>
+          <h3 className='text-2xl font-bold text-text-main'>
             Clear this slot?
           </h3>
-          <p className='text-stone-500 mt-2'>
+          <p className='text-text-muted mt-2'>
             Are you sure you want to remove this delivery record? This action
             cannot be undone.
           </p>
@@ -42,7 +42,7 @@ export const ClearSlotConfirmation = ({
         <div className='flex gap-3'>
           <button
             onClick={onClose}
-            className='flex-1 py-3 rounded-xl text-stone-500 hover:bg-stone-100 font-semibold transition-colors'
+            className='flex-1 py-3 rounded-xl text-text-muted hover:bg-panel-border font-semibold transition-colors'
           >
             Cancel
           </button>

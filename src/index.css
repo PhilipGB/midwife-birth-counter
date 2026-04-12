@@ -5,29 +5,82 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Cormorant Garamond', ui-serif, Georgia, serif;
   --font-script: 'Dancing Script', cursive;
+
+  --color-app-bg: var(--app-bg);
+  --color-panel-bg: var(--panel-bg);
+  --color-panel-border: var(--panel-border);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
 }
 
 body {
   background-color: #f5f5f4;
 }
 
+.dark body {
+  background-color: #1c1917;
+}
+
+:root {
+  --app-bg: #fdfaf7;
+  --panel-bg: #ffffff;
+  --panel-border: #f5f5f4;
+  --text-main: #1c1917;
+  --text-muted: #78716c;
+  --input-bg: #ffffff;
+  --input-border: #e7e5e4;
+  --footprint-pink: #ff9eb5;
+  --footprint-blue: #7cd0ff;
+  --footprint-empty-fill: rgba(80, 50, 20, 0.15);
+  --footprint-empty-stroke: rgba(0, 0, 0, 0.1);
+
+  --board-bg: #deb887;
+  --board-shadow:
+    inset 0 0 50px rgba(101, 67, 33, 0.3), 0 20px 40px rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  --engraved-color: #5c4033;
+  --engraved-shadow-light: rgba(255, 255, 255, 0.4);
+  --engraved-shadow-dark: rgba(0, 0, 0, 0.2);
+}
+
+.dark {
+  --app-bg: #0c0a09;
+  --panel-bg: #1c1917;
+  --panel-border: #292524;
+  --text-main: #f5f5f4;
+  --text-muted: #a8a29e;
+  --input-bg: #292524;
+  --input-border: #44403c;
+  --footprint-pink: #fca5b9;
+  --footprint-blue: #a0d8ff;
+  --footprint-empty-fill: rgba(0, 0, 0, 0.3);
+  --footprint-empty-stroke: rgba(0, 0, 0, 0.5);
+
+  --board-bg: #45322e;
+  --board-shadow:
+    inset 0 0 50px rgba(0, 0, 0, 0.5), 0 20px 40px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  --engraved-color: #d6d3d1;
+  --engraved-shadow-light: rgba(0, 0, 0, 0.4);
+  --engraved-shadow-dark: rgba(255, 255, 255, 0.2);
+}
+
 .engraved-text {
-  color: #5c4033;
+  color: var(--engraved-color);
   text-shadow:
-    1px 1px 1px rgba(255, 255, 255, 0.4),
-    -1px -1px 1px rgba(0, 0, 0, 0.2);
+    1px 1px 1px var(--engraved-shadow-light),
+    -1px -1px 1px var(--engraved-shadow-dark);
   opacity: 0.85;
 }
 
 .wood-board {
-  background-color: #deb887;
+  background-color: var(--board-bg);
   background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.05)),
     url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.01 0.1' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
-  box-shadow:
-    inset 0 0 50px rgba(101, 67, 33, 0.3),
-    0 20px 40px rgba(0, 0, 0, 0.2),
-    0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--board-shadow);
 }
 
 @keyframes pulsate {

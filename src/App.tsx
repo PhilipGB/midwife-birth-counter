@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBirthTracker } from './hooks/useBirthTracker';
 import { Board } from './components/Board';
 import { StatsPanel } from './components/StatsPanel';
@@ -9,6 +9,18 @@ import { ClearSlotConfirmation } from './components/ClearSlotConfirmation';
 function App() {
   const { state, actions } = useBirthTracker();
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (state.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [state.theme]);
+
+  const toggleTheme = () => {
+    actions.setTheme(state.theme === 'light' ? 'dark' : 'light');
+  };
   const [lastSavedIndex, setLastSavedIndex] = useState<number | null>(null);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [isClearOpen, setIsClearOpen] = useState(false);
@@ -59,7 +71,52 @@ function App() {
   };
 
   return (
-    <div className='min-h-screen bg-[#fdfaf7] text-stone-900 font-sans selection:bg-pink-100 selection:text-pink-900 p-4 sm:p-8 md:p-12 flex items-center justify-center'>
+    <div className='min-h-screen bg-app-bg text-text-main font-sans selection:bg-pink-100 selection:text-pink-900 p-4 sm:p-8 md:p-12 flex items-center justify-center transition-colors duration-300'>
+      <div className='fixed top-4 right-4 z-50'>
+        <button
+          onClick={toggleTheme}
+          className='p-2 rounded-full bg-panel-bg/50 backdrop-blur-sm border border-panel-border text-text-muted hover:bg-panel-bg transition-all shadow-sm'
+          aria-label='Toggle Night Shift'
+        >
+          {state.theme === 'light' ? (
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              width='20'
+              height='20'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <path d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z' />
+            </svg>
+          ) : (
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              width='20'
+              height='20'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <circle cx='12' cy='12' r='4' />
+              <path d='M12 2v2' />
+              <path d='M12 20v2' />
+              <path d='m4.93 4.93 1.41 1.41' />
+              <path d='m17.66 17.66 1.41 1.41' />
+              <path d='M2 12h2' />
+              <path d='M20 12h2' />
+              <path d='m6.34 17.66-1.41 1.41' />
+              <path d='m19.07 4.93-1.41 1.41' />
+            </svg>
+          )}
+        </button>
+      </div>
       <div className='flex flex-col lg:flex-row gap-12 items-start justify-center w-full max-w-6xl'>
         <Board
           name={state.name}

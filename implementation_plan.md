@@ -1,67 +1,61 @@
-# Implementation Plan: Reflective Practice Integration
+# Implementation Plan
 
-## [Overview]
+[Overview]
+Implement a "Night Shift" (Warm Dark Theme) toggle for the birth counter application.
 
-Integrate an optional Reflective Practice text field into the birth delivery recording process.
+The goal is to provide a visually comfortable dark mode that remains thematically consistent with the current warm, natural aesthetic. This involves introducing a theme state, persisting this state to local storage, and updating the CSS/component styles to respond to this state. The implementation will focus on using a CSS variable-based approach or Tailwind dark mode classes to ensure a smooth transition.
 
-The goal is to allow midwives to record reflective notes for each delivery. This field will be integrated into the `DeliveryModal` as an optional, initially hidden section that expands with an animation when the user clicks a toggle button. This ensures the modal remains concise for quick entries while providing space for detailed reflection when needed.
+[Types]  
+Introduce a new theme type and update the tracker state to include theme preference.
 
-## [Types]
+- `ThemeMode`: `'light' | 'dark'`
+- `TrackerState` (Interface): Add `theme: ThemeMode` field to persist the user's preference.
 
-Update the `SlotData` interface to support reflective notes.
+[Files]
+Modify existing styles and core components to support the theme toggle.
 
-- `SlotData` interface in `src/types.ts`:
-  - Add `reflectivePractice?: string`: An optional string to store the reflective notes for a specific delivery slot.
+- `src/index.css`: Define dark theme color variables and global styles for dark mode.
+- `src/App.tsx`: Implement the theme state management, persistence logic, and add the theme toggle UI.
+- `src/components/StatsPanel.tsx`: Update styles for dark mode compatibility.
+- `src/components/Board.tsx`: Update styles and engraved text colors for dark mode.
+- `src/components/DeliveryModal.tsx`: Update modal background and text colors for dark mode.
+- `src/components/ResetConfirmation.tsx`: Update confirmation dialog styles for dark mode.
+- `src/components/ClearSlotConfirmation.tsx`: Update confirmation dialog styles for dark mode.
+- `src/hooks/useBirthTracker.ts`: Add theme state to the hook and update local storage sync logic.
 
-## [Files]
+[Functions]
+Update hooks and components to handle theme switching.
 
-Modify existing files to implement the new field and its animation.
+- `useBirthTracker` (in `src/hooks/useBirthTracker.ts`):
+  - Add `theme` state.
+  - Update `useEffect` for loading from `localStorage` to include the theme.
+  - Update `useEffect` for saving to `localStorage` to include the theme.
+  - Add `setTheme` action to the returned actions object.
+- `App` component (in `src/App.tsx`):
+  - Implement a handler to toggle between 'light' and 'dark' themes.
+  - Apply the theme class (e.g., `dark`) to the root wrapper element.
 
-- `src/types.ts`: Update `SlotData` interface.
-- `src/components/DeliveryModal.tsx`:
-  - Add state for the reflective practice text.
-  - Add state for the expansion toggle.
-  - Implement the animated UI section using `motion`.
-  - Update save and initialization logic.
+[Classes]
+No new classes are being introduced. Modified Tailwind utility classes will be used for styling.
 
-## [Functions]
+- Modified styles in `App.tsx`, `Board.tsx`, `StatsPanel.tsx`, and Modals to include `dark:` variant classes (e.g., `bg-white` becomes `bg-white dark:bg-stone-900`).
 
-Modify functions within `DeliveryModal.tsx` to handle the new data.
+[Dependencies]
+No new dependencies are required.
 
-- `DeliveryModal` (component):
-  - `useEffect`: Update to initialize `localReflectivePractice` from `slot.reflectivePractice`.
-  - `handleSave`: Update to include `reflectivePractice: localReflectivePractice` in the `onUpdate` call.
+[Testing]
+Verify visual consistency and persistence across sessions.
 
-## [Classes]
+- Manual test: Toggle the theme and verify that colors transition correctly across the whole app.
+- Persistence test: Enable night shift mode, refresh the page, and verify it remains active.
+- Component check: Ensure the "engraved" text on the wood board remains legible in dark mode.
 
-No class modifications required.
+[Implementation Order]
+Sequence of changes to ensure stable integration.
 
-## [Dependencies]
-
-Utilize existing dependencies for animation.
-
-- `motion`: Use the already installed `motion` (Framer Motion) library to handle the smooth expansion and collapse of the reflective practice text area.
-
-## [Testing]
-
-Verify the feature through manual UI testing and state persistence.
-
-- **UI Testing**:
-  - Open `DeliveryModal` and verify the Reflective Practice section is hidden by default.
-  - Click the expand button and verify the text area appears with a smooth animation.
-  - Enter text and save; verify the modal closes.
-  - Re-open the same slot and verify the reflective notes are preserved and can be edited.
-- **Persistence**: Verify that the data is correctly saved to `localStorage` via the `useBirthTracker` hook.
-
-## [Implementation Order]
-
-Sequential steps to ensure stability.
-
-1. **Type Update**: Add `reflectivePractice` to `SlotData` in `src/types.ts`.
-2. **State Integration**: Add `localReflectivePractice` and `isExpanded` states to `DeliveryModal.tsx`.
-3. **Initialization Logic**: Update `useEffect` in `DeliveryModal.tsx` to load existing reflective notes.
-4. **UI Implementation**:
-   - Add the toggle button in `DeliveryModal.tsx`.
-   - Implement the animated `motion.div` containing the `textarea`.
-5. **Persistence Logic**: Update `handleSave` in `DeliveryModal.tsx` to persist the reflective notes.
-6. **Final Polish**: Style the text area and button to match the existing aesthetic (stone/pink/blue theme).
+1. Update `src/types.ts` to include `ThemeMode`.
+2. Update `src/hooks/useBirthTracker.ts` to manage and persist the theme state.
+3. Update `src/index.css` to define dark mode base styles.
+4. Implement the theme toggle UI and logic in `src/App.tsx`.
+5. Progressively update `StatsPanel`, `Board`, and all Modal components with `dark:` utility classes.
+6. Perform final visual verification of the "Warm Dark" palette.
